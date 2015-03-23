@@ -12,12 +12,12 @@ class Work():
         self.path_vec.append(self.start_node)
         self.path_cost = 0
         self.Beta = 1.0
-        self.Q0 = 0.5
+        self.randNumthreshold = 0.5
         self.Rho = 0.99
-        self.ntv = {}
+        self.nodesToVisit = {}
         for i in range(0, self.graph.num_nodes):
             if i != self.start_node:
-                self.ntv[i] = i
+                self.nodesToVisit[i] = i
         self.path_mat = []
         for i in range(0, self.graph.num_nodes):
             self.path_mat.append([0] * self.graph.num_nodes)
@@ -37,18 +37,18 @@ class Work():
         self.__init__(self.ID, self.start_node, self.grouping)
 
     def end(self):
-        return not self.ntv
+        return not self.nodesToVisit
 
 
     def state_transition_rule(self, curr_node):
         graph = self.grouping.graph
-        q = random.random()
+        #q = random.random()
         max_node = -1
-        if q < self.Q0:
+        if random.random() < self.randNumthreshold:
             print "Exploitation"
             max_val = -1
             val = None
-            for node in self.ntv.values():
+            for node in self.nodesToVisit.values():
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
                 val = graph.tau(curr_node, node) * math.pow(graph.etha(curr_node, node), self.Beta)
@@ -60,15 +60,15 @@ class Work():
             print "Exploration"
             sum = 0
             node = -1
-            for node in self.ntv.values():
+            for node in self.nodesToVisit.values():
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
                 sum += graph.tau(curr_node, node) * math.pow(graph.etha(curr_node, node), self.Beta)
             if sum == 0:
                 raise Exception("sum = 0")
-            avg = sum / len(self.ntv)
+            avg = sum / len(self.nodesToVisit)
             print "avg = %s" % (avg,)
-            for node in self.ntv.values():
+            for node in self.nodesToVisit.values():
                 p = graph.tau(curr_node, node) * math.pow(graph.etha(curr_node, node), self.Beta)
                 if p > avg:
                     print "p = %s" % (p,)
@@ -77,7 +77,7 @@ class Work():
                 max_node = node
         if max_node < 0:
             raise Exception("max_node < 0")
-        del self.ntv[max_node]
+        del self.nodesToVisit[max_node]
         return max_node
 
     def local_updating_rule(self, curr_node, next_node):
@@ -101,10 +101,10 @@ class BigGroup:
         self.reset()
 
     def reset(self):
-        self.bpc = sys.maxint
-        self.bpv = None
-        self.bpm = None
-        self.lbpi = 0
+        self.bestPathCost = sys.maxint
+        self.bestPathVector = None
+        self.bestPathMatrix = None
+        #self.lbpi = 0
 
     def start(self):
         self.ants = self.c_workers()
@@ -135,15 +135,15 @@ class BigGroup:
         print "Update called by %s" % (ant.ID,)
         self.ant_counter += 1
         self.avg_path_cost += ant.path_cost
-        if ant.path_cost < self.bpc:
-            self.bpc = ant.path_cost
-            self.bpm = ant.path_mat
-            self.bpv = ant.path_vec
-            self.lbpi = self.iter_counter
+        if ant.path_cost < self.bestPathCost:
+            self.bestPathCost = ant.path_cost
+            self.bestPathMatrix = ant.path_mat
+            self.bestPathVector = ant.path_vec
+            #self.lbpi = self.iter_counter
         if self.ant_counter == len(self.ants):
             self.avg_path_cost /= len(self.ants)
             print "Best: %s, %s, %s, %s" % (
-                self.bpv, self.bpc, self.iter_counter, self.avg_path_cost,)
+                self.bestPathVector, self.bestPathCost, self.iter_counter, self.avg_path_cost,)
 
 
     def done(self):
@@ -165,7 +165,7 @@ class BigGroup:
         for r in range(0, self.graph.num_nodes):
             for s in range(0, self.graph.num_nodes):
                 if r != s:
-                    delt_tau = self.bpm[r][s] / self.bpc
+                    delt_tau = self.bestPathMatrix[r][s] / self.bestPathCost
                     evaporation = (1 - self.Alpha) * self.graph.tau(r, s)
                     deposition = self.Alpha * delt_tau
                     self.graph.update_tau(r, s, evaporation + deposition)
@@ -226,56 +226,56 @@ import traceback
 
 
 def main(argv):
-    nm = 10
+    #numberOfNodes = 10 --- obsolete, for deletion
 
     if len(argv) >= 3 and argv[0]:
-        nm = int(argv[0])
+        numberOfNodes = int(argv[0])
 
-    if nm <= 10:
-        na = 20
-        ni = 12
-        nr = 1
+    if numberOfNodes <= 10:
+        numberOfAnts = 20
+        numberOfIterations = 12
+        #nr = 1
     else:
-        na = 28
-        ni = 20
-        nr = 1
+        numberOfAnts = 28
+        numberOfIterations = 20
+        #nr = 1
 
-    stuff = pickle.load(open(argv[1], "r"))
-    cities = stuff[0]
-    cm = stuff[1]
-    #why are we doing this?
-    if nm < len(cm):
-        cm = cm[0:nm]
-        for i in range(0, nm):
-            cm[i] = cm[i][0:nm]
+    input_arguments = pickle.load(open(argv[1], "r"))
+    cities = input_arguments[0]
+    numOfCities = input_arguments[1]
+    #why are we doing this? In order to taylor the numberOfNodes to the numOfCities
+    if numberOfNodes < len(numOfCities):
+        numOfCities = numOfCities[0:numberOfNodes]
+        for i in range(0, numberOfNodes):
+            numOfCities[i] = numOfCities[i][0:numberOfNodes]
 
 
 
     try:
-        graph = GraphBit(nm, cm)
-        bpv = None
-        bpc = sys.maxint
-        for i in range(0, nr):
-            print "Repetition %s" % i
-            graph.reset_tau()
-            workers = BigGroup(graph, na, ni)
-            print "Colony Started"
-            workers.start()
-            if workers.bpc < bpc:
-                print "Colony Path"
-                bpv = workers.bpv
-                bpc = workers.bpc
+        graph = GraphBit(numberOfNodes, numOfCities)
+	bestPathVector = None
+        bestPathCost = sys.maxint
+        #for i in range(0, nr): --- removed, for nr is always one
+        print "Repetition %s" % i
+        graph.reset_tau()
+        workers = BigGroup(graph, numberOfAnts, numberOfIterations)
+        print "Colony Started"
+        workers.start()
+        if workers.bestPathCost < bestPathCost:
+             print "Colony Path"
+             bestPathVector = workers.bestPathVector
+             bestPathCost = workers.bestPathCost
 
         print "\n------------------------------------------------------------"
         print "                     Results                                "
         print "------------------------------------------------------------"
-        print "\nBest path = %s" % (bpv,)
+        print "\nBest path = %s" % (bestPathVector,)
         city_vec = []
-        for node in bpv:
+        for node in bestPathVector:
             print cities[node] + " ",
             city_vec.append(cities[node])
-        print "\nBest path cost = %s\n" % (bpc,)
-        results = [bpv, city_vec, bpc]
+        print "\nBest path cost = %s\n" % (bestPathCost,)
+        results = [bestPathVector, city_vec, bestPathCost]
         pickle.dump(results, open(argv[2], 'w+'))
     except Exception, e:
         print "exception: " + str(e)

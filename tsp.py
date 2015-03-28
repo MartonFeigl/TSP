@@ -226,7 +226,7 @@ import traceback
 
 
 def main(argv):
-    #numberOfNodes = 10 --- obsolete, for deletion
+    numberOfNodes = 10
 
     if len(argv) >= 3 and argv[0]:
         numberOfNodes = int(argv[0])

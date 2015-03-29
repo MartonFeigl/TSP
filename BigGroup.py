@@ -44,7 +44,7 @@ class BigGroup:
         return self.iter_counter
 
     def update(self, ant):
-        print "Update called by %s" % (ant.ID,)
+        #print "Update called by %s" % (ant.ID,)
         self.ant_counter += 1
         self.avg_path_cost += ant.path_cost
         if ant.path_cost < self.bestPathCost:
@@ -54,8 +54,8 @@ class BigGroup:
             #self.lbpi = self.iter_counter
         if self.ant_counter == len(self.ants):
             self.avg_path_cost /= len(self.ants)
-            print "Best: %s, %s, %s, %s" % (
-                self.bestPathVector, self.bestPathCost, self.iter_counter, self.avg_path_cost,)
+            print "%02d: best path vector: %s, best path cost: %d, avg path cost: %d" % (
+                self.iter_counter, self.bestPathVector, self.bestPathCost, self.avg_path_cost,)
 
 
     def done(self):

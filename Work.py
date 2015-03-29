@@ -47,7 +47,7 @@ class Work():
 
 
         if random.random() < self.randNumThreshold:
-            print "Exploitation"
+            #print "Exploitation"
             max_val = -1
             val = None
             for node in self.nodesToVisit.values():
@@ -58,8 +58,8 @@ class Work():
                     max_val = val
                     max_node = node
         else:
-            print "Bob was here"
-            print "Exploration"
+            #print "Bob was here"
+            #print "Exploration"
             sum = 0
             #node = -1 # irrelevant, since for loop reinitialises it
 	    temp_val = 0;
@@ -73,13 +73,13 @@ class Work():
             if sum == 0:
                 raise Exception("sum = 0")
             avg = sum / len(self.nodesToVisit)
-            print "avg = %s" % (avg,)
+            #print "avg = %s" % (avg,)
 	    STRI = 0 #State Transition Rule Index, 
             for node in self.nodesToVisit.values():
                 #p = graph.tau(curr_node, node) * math.pow(graph.etha(curr_node, node), self.Beta)
 		
                 if p[STRI] > avg:
-                    print "p = %s" % (p[STRI],)
+                    #print "p = %s" % (p[STRI],)
                     max_node = node
 		STRI += 1
             if max_node == -1:
